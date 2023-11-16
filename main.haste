@@ -1,0 +1,7 @@
+# starts here
+
+print 1983;
+print true;
+print 0.2703;
+print "Hi, Mom"; # yes
+exit 0;
