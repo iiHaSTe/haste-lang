@@ -1,4 +1,4 @@
-#![allow(non_snake_case, unreachable_patterns)]
+#![allow(non_snake_case, unused_mut, unreachable_patterns)]
 
 pub mod tokens;
 pub mod traits;
@@ -16,6 +16,7 @@ use crate::generator::javascript::JSGenerator;
 fn main() -> std::io::Result<()> {
     let binding = fs::read("./main.haste")?;
     let input = String::from_utf8_lossy(&binding);
+    //println!("{}", input);
     
     let mut tokenizer = Tokenizer::new(&input);
     let tokens = tokenizer.tokenize();
@@ -24,7 +25,7 @@ fn main() -> std::io::Result<()> {
     let tree = parser.parse();
 
     let generator = JSGenerator::new(&tree);
-    let javascriptCode = generator.generate();
+    let javascriptCode = generator.generate_programe();
     
     {
         let mut file = File::create("./dist/out.js")?;

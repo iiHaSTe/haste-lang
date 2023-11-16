@@ -10,6 +10,8 @@ pub enum Token {
     Exit,
     Print,
     // keywords
+    Var,
+    Ident(String),
     // built in data types
     IntLit(String),
     StringLit(String),
@@ -17,6 +19,7 @@ pub enum Token {
     FloatLit(String),
     // genirics data types
     // tokens
+    Eq,
     Semi,
     LeftPrac,
     RightPrac

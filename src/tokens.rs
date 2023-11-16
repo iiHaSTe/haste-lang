@@ -44,10 +44,10 @@ impl<'a> Tokenizer<'a> {
                     self.consume();
                     continue;
                 },
-                c if c.is_alphabetic() => {
+                c if c.is_alphabetic() || c == '_' => {
                     buffer.push(self.consume());
                     while let Some(cc) = self.peek(None) {
-                        if cc.is_alphanumeric() {
+                        if cc.is_alphanumeric() || cc == '_' {
                             buffer.push(self.consume());
                         } else {
                             break;
@@ -58,9 +58,13 @@ impl<'a> Tokenizer<'a> {
                             tokens.push(Token::Exit),
                         "print" =>
                             tokens.push(Token::Print),
+                        "var" =>
+                            tokens.push(Token::Var),
                         b if b == "true" || b == "false" =>
                             tokens.push(Token::Boolean(b == "true")),
-                        _ => eprintln!("[Syntax Error] ({buffer}) token is not deffined"),
+                        v =>
+                            tokens.push(Token::Ident(v.to_string())),
+                        //_ => eprintln!("[Syntax Error] ({buffer}) token is not deffined"),
                     }
                     buffer.clear();
                 },
@@ -86,11 +90,24 @@ impl<'a> Tokenizer<'a> {
                     );
                     buffer.clear();
                 },
+                '=' => {
+                    self.consume();
+                    tokens.push(Token::Eq);
+                },
                 '"' => {
                     self.consume();
                     while let Some(c) = self.peek(None) {
                         if c != '"' {
-                            buffer.push(self.consume());
+                            if c == '\\' {
+                                buffer.push(self.consume());
+                                if let Some(_cc) = self.peek(None) {
+                                    buffer.push(self.consume());
+                                } else {
+                                    eprintln!("[Syntax Error] Files ends before the string ends");
+                                }
+                            } else {
+                                buffer.push(self.consume());
+                            }
                         } else {
                             self.consume();
                             break;

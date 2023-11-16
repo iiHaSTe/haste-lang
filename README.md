@@ -14,9 +14,15 @@ and able to change_**]
 
 - And some built-in methods: <br/>
 > **print**: `print "I love penguin 🐧";`<br/>
-> **exit**: `exit 0;`
-
+> **exit**: `exit 0;`<br/>
 [Note: **I'll make it possible to apply an parentheses to methods as optional way (just if they're one argument applied to the function)**]
+
+- Variable declaration: <br/>
+```haste
+var msg = "Hey!!!";
+var msg_2 = "\"Hello :0\"";
+var h = 32;
+```
 
 - Comments (Cuz why not!):
 ```haste 
