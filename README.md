@@ -6,21 +6,15 @@ Is a semicolon based language (I don't want to suffering while im make this lang
 and able to change_**]
 
 ## Features:
-- They are some native **data types** like:
+- They are some native **data types** like: <br/>
+> **String**: `"I'm a string :D"` <br/>
+> **Integer**: `69` (y'all need some one to wash your mind 💀) <br/>
+> **Float**: `69.69` (🤨) <br/>
+> **boolean**: `false false true true false true true false  false false true true true false false true`
 
-**String**: `"I'm a string :D"`
-
-**Integer**: `69` (y'all need some one to wash your brain 💀)
-
-**Float**: `69.69` (🤨)
-
-**boolean**: `false false true true false true true false  false false true true true false false true`
-
-- And some built-in methods:
-
-**print**: `print "I love penguin 🐧";`
-
-**exit**: `exit 0;`
+- And some built-in methods: <br/>
+> **print**: `print "I love penguin 🐧";`<br/>
+> **exit**: `exit 0;`
 
 [Note: **I'll make it possible to apply an parentheses to methods as optional way (just if they're one argument applied to the function)**]
 
