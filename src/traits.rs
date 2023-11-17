@@ -14,7 +14,7 @@ pub enum Token {
     Ident(String),
     // built in data types
     IntLit(String),
-    StringLit(String),
+    StringLit(String, bool),
     Boolean(bool),
     FloatLit(String),
     // genirics data types

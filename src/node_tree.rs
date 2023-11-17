@@ -3,13 +3,16 @@ use crate::traits::{
     Token
 };
 
+use std::thread;
+use std::time::Duration;
+
 #[derive(Debug)]
 pub enum NodeExpr {
-    Ident(Token),
-    IntLit(Token),
-    StringLit(Token),
-    FloatLit(Token),
-    Boolean(Token),
+    Ident(String),
+    IntLit(String),
+    StringLit(String, bool),
+    FloatLit(String),
+    Boolean(bool),
     Null,
 }
 
@@ -17,7 +20,7 @@ pub enum NodeExpr {
 pub enum NodeStatment {
     Exit(NodeExpr),
     Print(NodeExpr),
-    Var(Token, NodeExpr)
+    Var(NodeExpr, NodeExpr)
 }
 
 #[derive(Debug)]
@@ -32,7 +35,7 @@ pub struct TreeParser<'a> {
     contentLen: usize
 }
 
-impl<'a> Process<&'a Token> for TreeParser<'a> {
+/*impl<'a> Process<&'a Token> for TreeParser<'a> {
     fn peek(&mut self, offset: Option<usize>) -> Option<&'a Token> {
         if self.index + offset.unwrap_or(0) >= self.contentLen {
             return None;
@@ -44,7 +47,7 @@ impl<'a> Process<&'a Token> for TreeParser<'a> {
         self.index += 1;
         return self.content.get(tmp).unwrap();
     }
-}
+}*/
 
 impl<'a> TreeParser<'a> {
     pub fn new(content: &'a Vec<Token>) -> Self {
@@ -55,124 +58,159 @@ impl<'a> TreeParser<'a> {
         };
     }
     pub fn parse(&mut self) -> NodeTree {
+        let mut tokens = self.content.into_iter().peekable();
+        return self.parse_statment(&mut tokens);
+    }
+    fn parse_statment<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
+        -> NodeTree
+        where I: Iterator<Item = &'a Token>
+    {
         let mut tree = NodeTree {
             body: vec![]
         };
-        while let Some(token) = self.peek(None) {
+        while let Some(token) = tokens.peek() {
             match token {
                 Token::Exit => {
-                    self.consume();
-                    tree.body.push(self.parseExit())
+                    tokens.next();
+                    tree.body.push(match self.parseExit(tokens) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            std::process::exit(1);
+                        }
+                    });
                 },
                 Token::Print => {
-                    self.consume();
-                    tree.body.push(self.parsePrint());
+                    tokens.next();
+                    tree.body.push(match self.parsePrint(tokens) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            std::process::exit(1);
+                        }
+                    });
                 },
                 Token::Var => {
-                    self.consume();
-                    tree.body.push(self.parseVar());
+                    tokens.next();
+                    tree.body.push(match self.parseVar(tokens) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            eprintln!("{}", e);
+                            std::process::exit(1);
+                        }
+                    });
                 },
                 Token::Semi => {
-                    self.consume();
+                    tokens.next();
                 },
                 _ => {},
             }
         }
         return tree;
     }
-    fn parseVar(&mut self) -> NodeStatment {
+    fn parse_expr<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
+        -> Result<NodeExpr, &'static str>
+        where I: Iterator<Item = &'a Token>
+    {
+        return match tokens.peek() {
+            Some(token) => {
+                match token {
+                Token::Ident(value) => Ok(NodeExpr::Ident(value.to_string())),
+                Token::IntLit(value) => Ok(NodeExpr::IntLit(value.to_string())),
+                Token::StringLit(value, r#type) => Ok(NodeExpr::StringLit(value.clone(), *r#type)),
+                Token::Boolean(value) => Ok(NodeExpr::Boolean(*value)),
+                Token::FloatLit(value) => Ok(NodeExpr::FloatLit(value.to_string())),
+                _ => Err("[Syntax Error] Current token is not a valid Expretion")
+                }
+            },
+            None => Err("[Syntax Error] the file ends before finding a valid Token"),
+        }
+    }
+    fn parseVar<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
+        -> Result<NodeStatment, &'static str>
+        where I: Iterator<Item = &'a Token>
+    {
         let mut statment: NodeStatment;
-        if let (Some(t1), Some(t2), Some(t3)) = (self.peek(None), self.peek(Some(1)), self.peek(Some(2))) {
-            match (t1, t2, t3) {
-                (Token::Ident(_), Token::Semi, _) =>
-                    statment = NodeStatment::Var(self.consume().clone(), NodeExpr::Null),
-                (Token::Ident(_), Token::Eq, token) =>
-                    statment = NodeStatment::Var(self.consume().clone(), {
-                        self.consume();
-                        match token {
-                            Token::Ident(_) => NodeExpr::Ident(self.consume().clone()),
-                            Token::IntLit(_) => NodeExpr::IntLit(self.consume().clone()),
-                            Token::Boolean(_) => NodeExpr::Boolean(self.consume().clone()),
-                            Token::StringLit(_) => NodeExpr::StringLit(self.consume().clone()),
-                            Token::FloatLit(_) => NodeExpr::FloatLit(self.consume().clone()),
-                            _ => {
-                                eprintln!("[Syntax Error] wrong token in var statment");
-                                std::process::exit(1);
-                            }
-                        }
-                    }),
+        let mut ident: NodeExpr;
+        let mut aa: NodeExpr = NodeExpr::Null;
+        if let Some(token) = tokens.peek() {
+            match token {
+                Token::Ident(_) => {
+                    ident = self.parse_expr(tokens)?;
+                    tokens.next();
+                },
+                _ => return Err(r#"[1Syntax Error] Wrong 'let' syntax.
+try `let ident;` or `let ident = "Something";`"#),
+            }
+        } else {
+            return Err(r#"[2Syntax Error] You ended the file b4 complete 'let' syntax.
+try `let ident;` or `let ident = "Something";`"#);
+        }
+        if let Some(token) = tokens.peek() {
+            match token {
+                Token::Eq => {
+                    tokens.next();
+                    aa = self.parse_expr(tokens)?;
+                    tokens.next();
+                },
+                Token::Semi => {
+                    tokens.next();
+                },
                 _ => {
-                    println!("{:#?} {:#?} {:#?}", t1, t2, t3);
-                    eprintln!("[Syntax Error] You don't know how to define a variable ??");
-                    std::process::exit(1);
+                    return Err(r#"[3Syntax Error] 'let' syntax is invalid.
+try `let ident;` or `let ident = "Something";`, {:#?}"#);
                 }
             }
         } else {
-            eprintln!("[Syntax Error] So smart! even you ended the file without declare the variable correctly!!");
-            std::process::exit(1);
+            return Err(r#"[4Syntax Error] You ended the file b4 complete 'let' syntax.
+try `let ident;` or `let ident = "Something";`"#);
         }
-        return statment;
+
+        statment = NodeStatment::Var(ident, aa);
+        return Ok(statment);
     }
-    fn parsePrint(&mut self) -> NodeStatment {
-        if let Some(token) = self.peek(None) {
-            return match token {
-                Token::IntLit(_value) => {
-                    NodeStatment::Print(
-                        NodeExpr::IntLit(self.consume().clone())
-                    )
-                },
-                Token::StringLit(_value) => {
-                    NodeStatment::Print(
-                        NodeExpr::StringLit(self.consume().clone())
-                    )
-                },
-                Token::FloatLit(_value) => {
-                    NodeStatment::Print(
-                        NodeExpr::FloatLit(self.consume().clone())
-                    )
-                },
-                Token::Boolean(_value) => {
-                    NodeStatment::Print(
-                        NodeExpr::Boolean(self.consume().clone())
-                    )
-                },
-                Token::Ident(_value) => {
-                    NodeStatment::Print(
-                        NodeExpr::Ident(self.consume().clone())
-                    )
+    fn parsePrint<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
+        -> Result<NodeStatment, &'static str>
+        where I: Iterator<Item = &'a Token>
+    {
+        return if let Some(token) = tokens.peek() {
+            let mut res: Result<NodeStatment, &'static str>;
+            match token {
+                Token::IntLit(_)
+                    | Token::StringLit(_, _)
+                    | Token::FloatLit(_)
+                    | Token::Boolean(_) 
+                    | Token::Ident(_) => {
+                    res = Ok(NodeStatment::Print(self.parse_expr(tokens)?));
                 },
                 _ => {
-                    eprintln!(r#"[Syntax Error] "print" method only accept 'int', 'float', 'boolean' and 'string'"#);
-                    std::process::exit(1);
+                    res = Err(r#"[Syntax Error] "print" method only accept 'int', 'float', 'boolean' and 'string'"#);
                 }
             }
+            tokens.next();
+            res
         } else {
-            eprintln!(r#"[Syntax Error] you just end every think and forgot to pass an argument to "print" method!!"#);
-            std::process::exit(1);
-        }
+            Err(r#"[Syntax Error] you just end every think and forgot to pass an argument to "print" method!!"#)
+        };
     }
-    fn parseExit(&mut self) -> NodeStatment {
-        if let Some(token) = self.peek(None) {
-            return match token {
-                Token::IntLit(_value) => {
-                    NodeStatment::Exit(
-                        NodeExpr::IntLit(self.consume().clone())
-                    )
+    fn parseExit<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
+        -> Result<NodeStatment, &'static str>
+        where I: Iterator<Item = &'a Token>
+    {
+        return if let Some(token) = tokens.peek() {
+            let mut res: Result<NodeStatment, &'static str>;
+            match token {
+                Token::IntLit(_) | Token::Ident(_) => {
+                    res = Ok(NodeStatment::Exit(self.parse_expr(tokens)?));
                 },
-                Token::Ident(_value) => {
-                    NodeStatment::Exit(
-                        NodeExpr::Ident(self.consume().clone())
-                    )
-                }
                 _ => {
-                    eprintln!(r#"[Syntax Error] It has to be a byte inside "Exit" method"#);
-                    std::process::exit(1);
+                    res = Err(r#"[Syntax Error] It has to be a byte inside "Exit" method"#);
                 }
-            };
+            }
+            tokens.next();
+            res
         } else {
-            eprintln!(r#"[Syntax Error] you just end every think and forgot to pass an argument to "exit" method!!"#);
-            std::process::exit(1);
+            Err(r#"[Syntax Error] you just end every think and forgot to pass an argument to "exit" method!!"#)
         }
     }
 }
-

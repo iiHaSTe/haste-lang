@@ -1,0 +1,17 @@
+# prototype file (not the release !!!)
+
+func main() {
+    print "Hello world!\n";
+    println "Hello world!";
+    println("Hello world!");
+
+    var name = "Hesham";
+    var[int] age = 18;
+    const[Gender] gender = Gender::Male;
+    var[Jobe] jobe = undefined;
+    
+    var x = 10;
+    println x; # 10
+
+    exit 0;
+}

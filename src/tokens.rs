@@ -1,5 +1,8 @@
 #![allow(non_snake_case)]
 
+use std::thread;
+use std::time::Duration;
+
 use crate::traits::{
     Process,
     Token
@@ -34,11 +37,28 @@ impl<'a> Tokenizer<'a> {
             contentLen: content.chars().count()
         }
     }
-    
+    fn str_tokener(&mut self, buffer: &mut String, c: &char) -> bool {
+        return if *c == '\\' {
+            buffer.push(self.consume());
+            if let Some(_cc) = self.peek(None) {
+                buffer.push(self.consume());
+                true
+            } else {
+                eprintln!("[Syntax Error] Files ends before the string ends");
+                false
+            }
+        } else {
+            buffer.push(self.consume());
+            true
+        };
+    }
+
     pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens: Vec<Token> = vec![];
         let mut buffer: String = String::from("");
         while let Some(ch) = self.peek(None) {
+                    // thread::sleep(Duration::from_millis(300));
+                    // println!("{:#?}", buffer);
             match ch {
                 c if c.is_whitespace() => {
                     self.consume();
@@ -94,26 +114,29 @@ impl<'a> Tokenizer<'a> {
                     self.consume();
                     tokens.push(Token::Eq);
                 },
-                '"' => {
+                '"' | '\'' => {
                     self.consume();
                     while let Some(c) = self.peek(None) {
-                        if c != '"' {
-                            if c == '\\' {
-                                buffer.push(self.consume());
-                                if let Some(_cc) = self.peek(None) {
-                                    buffer.push(self.consume());
-                                } else {
-                                    eprintln!("[Syntax Error] Files ends before the string ends");
-                                }
-                            } else {
-                                buffer.push(self.consume());
-                            }
+                        if c == '"' || c == '\'' {
+                            self.consume();
+                            break;
+                        }
+                        self.str_tokener(&mut buffer, &c);
+                    }
+                    tokens.push(Token::StringLit(buffer.clone(), false));
+                    buffer.clear();
+                },
+                '`' => {
+                    self.consume();
+                    while let Some(c) = self.peek(None) {
+                        if c != '`' {
+                            self.str_tokener(&mut buffer, &c);
                         } else {
                             self.consume();
                             break;
                         }
                     }
-                    tokens.push(Token::StringLit(buffer.clone()));
+                    tokens.push(Token::StringLit(buffer.clone(), true));
                     buffer.clear();
                 },
                 ';' => {

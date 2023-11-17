@@ -1,6 +1,9 @@
 use crate::node_tree::{NodeTree, NodeStatment, NodeExpr};
 use crate::traits::Token;
 
+use std::thread;
+use std::time::Duration;
+
 #[derive(Debug)]
 pub struct JSGenerator<'a> {
     tree: &'a NodeTree
@@ -23,66 +26,31 @@ impl<'a> JSGenerator<'a> {
                 format!("process.exit({});\n", self.generate_expr(&value)),
             NodeStatment::Print(value) =>
                 format!("console.log({});\n", self.generate_expr(&value)),
-            NodeStatment::Var(token, exp) => if let Some(value) = self.isIdent(&token) {
-                format!("let {} = {};\n", value, self.generate_expr(&exp))
-            } else {
-                eprintln!("[Syntax Error] no valide identifier.");
-                std::process::exit(1);
-            },
+            NodeStatment::Var(ident, value) =>
+                format!("let {} = {};\n", self.generate_expr(ident), self.generate_expr(value)),
             _ => {
                 eprintln!("[Syntax Error] no freinds?");
                 std::process::exit(1);
             }
         }
     }
-    fn isIdent(&self, token: &Token) -> Option<String> {
-        return match token {
-            Token::Ident(value) => Some(value.to_string()),
-            _ => None
-        }
-    }
     fn generate_expr(&self, expr: &NodeExpr) -> String {
         return match expr {
-            NodeExpr::Ident(token) => match token {
-                Token::Ident(value) => value.to_string(),
-                _ => {
-                    eprintln!("[Syntax Error] Univialable Token");
-                    std::process::exit(1);
-                }
-            },
-            NodeExpr::IntLit(token) => match token {
-                Token::IntLit(value) => value.to_string(),
-                _ => {
-                    eprintln!("[Syntax Error] Univialable Token");
-                    std::process::exit(1);
-                }
-            },
-            NodeExpr::StringLit(token) => match token {
-                Token::StringLit(value) => format!("\"{}\"", value),
-                _ => {
-                    eprintln!("[Syntax Error] Univialable Token");
-                    std::process::exit(1);
-                }
-            },
-            NodeExpr::FloatLit(token) => match token {
-                Token::FloatLit(value) => value.to_string(),
-                _ => {
-                    eprintln!("[Syntax Error] Univialable Token");
-                    std::process::exit(1);
-                }
-            },
-            NodeExpr::Boolean(token) => match token {
-                Token::Boolean(value) =>
-                    if *value {
-                        String::from("true")
-                    } else {
-                        String::from("false")
-                    },
-                _ => {
-                    eprintln!("[Syntax Error] Univialable Token");
-                    std::process::exit(1);
+            NodeExpr::Ident(value) => value.to_string(),
+            NodeExpr::IntLit(value) => value.to_string(),
+            NodeExpr::StringLit(value, formated) =>
+                if *formated {
+                    format!("`{}`", value)
+                } else {
+                    format!("\"{}\"", value)
                 },
-            },
+            NodeExpr::FloatLit(value) => value.to_string(),
+            NodeExpr::Boolean(value) =>
+                if *value {
+                    String::from("true")
+                } else {
+                    String::from("false")
+                },
             NodeExpr::Null => String::from("null"),
         };
     }
