@@ -6,6 +6,10 @@ Is a semicolon based language (I don't want to suffering while im make this lang
 and able to change_**]
 
 ## Features:
+- How to try it? <br/>
+Just install the repo in your device and make a folder inside the project called `dist`
+which has the JavaScript output.
+
 - They are some native **data types** like: <br/>
 > **String**: `"I'm a string :D"` <br/>
 > **Integer**: `69` (y'all need some one to wash your mind 💀) <br/>
