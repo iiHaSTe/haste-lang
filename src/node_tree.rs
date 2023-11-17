@@ -1,10 +1,6 @@
 use crate::traits::{
-    Process,
     Token
 };
-
-use std::thread;
-use std::time::Duration;
 
 #[derive(Debug)]
 pub enum NodeExpr {
@@ -30,31 +26,13 @@ pub struct NodeTree {
 
 #[derive(Debug)]
 pub struct TreeParser<'a> {
-    index: usize,
     content: &'a Vec<Token>,
-    contentLen: usize
 }
-
-/*impl<'a> Process<&'a Token> for TreeParser<'a> {
-    fn peek(&mut self, offset: Option<usize>) -> Option<&'a Token> {
-        if self.index + offset.unwrap_or(0) >= self.contentLen {
-            return None;
-        }
-        return Some(self.content.get(self.index + offset.unwrap_or(0)).unwrap());
-    }
-    fn consume(&mut self) -> &'a Token {
-        let tmp = self.index.clone();
-        self.index += 1;
-        return self.content.get(tmp).unwrap();
-    }
-}*/
 
 impl<'a> TreeParser<'a> {
     pub fn new(content: &'a Vec<Token>) -> Self {
         return TreeParser { 
-            index: 0,
-            content: content,
-            contentLen: content.len()
+            content: content
         };
     }
     pub fn parse(&mut self) -> NodeTree {

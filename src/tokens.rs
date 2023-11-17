@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-use std::thread;
-use std::time::Duration;
+
+
 
 use crate::traits::{
     Process,
@@ -57,8 +57,6 @@ impl<'a> Tokenizer<'a> {
         let mut tokens: Vec<Token> = vec![];
         let mut buffer: String = String::from("");
         while let Some(ch) = self.peek(None) {
-                    // thread::sleep(Duration::from_millis(300));
-                    // println!("{:#?}", buffer);
             match ch {
                 c if c.is_whitespace() => {
                     self.consume();
@@ -84,7 +82,6 @@ impl<'a> Tokenizer<'a> {
                             tokens.push(Token::Boolean(b == "true")),
                         v =>
                             tokens.push(Token::Ident(v.to_string())),
-                        //_ => eprintln!("[Syntax Error] ({buffer}) token is not deffined"),
                     }
                     buffer.clear();
                 },
