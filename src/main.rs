@@ -4,6 +4,7 @@ pub mod tokens;
 pub mod traits;
 pub mod node_tree;
 pub mod generator;
+pub mod errors;
 
 use std::fs;
 use std::fs::File;
@@ -16,7 +17,6 @@ use crate::generator::javascript::JSGenerator;
 fn main() -> std::io::Result<()> {
     let binding = fs::read("./main.haste")?;
     let input = String::from_utf8_lossy(&binding);
-    //println!("{}", input);
     
     let mut tokenizer = Tokenizer::new(&input);
     let tokens = tokenizer.tokenize();

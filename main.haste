@@ -1,8 +1,6 @@
 # starts here
 
-var exit_succesful = 0;
-
-var name = "ysassin";
+var name = "Hesham";
 print name;
 
 var yy = "xx"

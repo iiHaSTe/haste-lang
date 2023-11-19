@@ -3,9 +3,9 @@ pub trait Process<T> {
     fn consume(&mut self) -> T;
 }
 
-#[derive(Clone)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
+    Vide,
     // built in functions
     Exit,
     Print,
@@ -23,4 +23,11 @@ pub enum Token {
     Semi,
     LeftPrac,
     RightPrac
+}
+
+#[derive(Debug, Clone)]
+pub struct TokenType {
+    pub token: Token,
+    pub line: usize,
+    pub column: usize
 }

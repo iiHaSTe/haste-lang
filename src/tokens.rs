@@ -1,18 +1,19 @@
 #![allow(non_snake_case)]
 
-
-
-
+use std::thread;
+use std::time::Duration;
 use crate::traits::{
     Process,
-    Token
+    Token,
+    TokenType
 };
 
 #[derive(Debug)]
 pub struct Tokenizer<'a> {
     index: usize,
     content: &'a str,
-    contentLen: usize
+    contentLen: usize,
+    token_type: TokenType
 }
 
 impl<'a> Process<char> for Tokenizer<'a> {
@@ -25,6 +26,7 @@ impl<'a> Process<char> for Tokenizer<'a> {
     fn consume(&mut self) -> char {
         let tmp = self.index.clone();
         self.index += 1;
+        self.token_type.column += 1;
         return self.content.chars().nth(tmp).unwrap();
     }
 }
@@ -34,7 +36,12 @@ impl<'a> Tokenizer<'a> {
         Tokenizer {
             index: 0,
             content,
-            contentLen: content.chars().count()
+            contentLen: content.chars().count(),
+            token_type: TokenType {
+                line: 1,
+                column: 0,
+                token: Token::Vide
+            }
         }
     }
     fn str_tokener(&mut self, buffer: &mut String, c: &char) -> bool {
@@ -52,13 +59,25 @@ impl<'a> Tokenizer<'a> {
             true
         };
     }
+    pub fn init_token(&mut self, token: Token) -> TokenType {
+        self.token_type.token = token;
+        return self.token_type.clone();
+    }
 
-    pub fn tokenize(&mut self) -> Vec<Token> {
-        let mut tokens: Vec<Token> = vec![];
+    pub fn tokenize(&mut self) -> Vec<TokenType> {
+        let mut tokens: Vec<TokenType> = vec![];
         let mut buffer: String = String::from("");
         while let Some(ch) = self.peek(None) {
+            self.token_type.token = Token::Vide;
+            //self.token_type.column += 1;
             match ch {
                 c if c.is_whitespace() => {
+                    if c == '\n' {
+                        self.token_type.line += 1;
+                        self.token_type.column = 0;
+                        self.consume();
+                        continue;
+                    }
                     self.consume();
                     continue;
                 },
@@ -73,15 +92,15 @@ impl<'a> Tokenizer<'a> {
                     }
                     match &*buffer {
                         "exit" =>
-                            tokens.push(Token::Exit),
+                            tokens.push(self.init_token(Token::Exit)),
                         "print" =>
-                            tokens.push(Token::Print),
+                            tokens.push(self.init_token(Token::Print)),
                         "var" =>
-                            tokens.push(Token::Var),
+                            tokens.push(self.init_token(Token::Var)),
                         b if b == "true" || b == "false" =>
-                            tokens.push(Token::Boolean(b == "true")),
+                            tokens.push(self.init_token(Token::Boolean(b == "true"))),
                         v =>
-                            tokens.push(Token::Ident(v.to_string())),
+                            tokens.push(self.init_token(Token::Ident(v.to_string()))),
                     }
                     buffer.clear();
                 },
@@ -98,18 +117,18 @@ impl<'a> Tokenizer<'a> {
                             break;
                         }
                     }
-                    tokens.push(
+                    tokens.push(self.init_token(
                         if isFloat {
                             Token::FloatLit(buffer.clone())
                         } else {
                             Token::IntLit(buffer.clone())
                         }
-                    );
+                    ));
                     buffer.clear();
                 },
                 '=' => {
                     self.consume();
-                    tokens.push(Token::Eq);
+                    tokens.push(self.init_token(Token::Eq));
                 },
                 '"' | '\'' => {
                     self.consume();
@@ -120,7 +139,7 @@ impl<'a> Tokenizer<'a> {
                         }
                         self.str_tokener(&mut buffer, &c);
                     }
-                    tokens.push(Token::StringLit(buffer.clone(), false));
+                    tokens.push(self.init_token(Token::StringLit(buffer.clone(), false)));
                     buffer.clear();
                 },
                 '`' => {
@@ -133,25 +152,27 @@ impl<'a> Tokenizer<'a> {
                             break;
                         }
                     }
-                    tokens.push(Token::StringLit(buffer.clone(), true));
+                    tokens.push(self.init_token(Token::StringLit(buffer.clone(), true)));
                     buffer.clear();
                 },
                 ';' => {
                     self.consume();
-                    tokens.push(Token::Semi);
+                    tokens.push(self.init_token(Token::Semi));
                 },
                 '(' => {
                     self.consume();
-                    tokens.push(Token::LeftPrac);
+                    tokens.push(self.init_token(Token::LeftPrac));
                 },
                 ')' => {
                     self.consume();
-                    tokens.push(Token::RightPrac);
+                    tokens.push(self.init_token(Token::RightPrac));
                 },
                 '#' => {
                     self.consume();
                     while let Some(ch) = self.peek(None) {
                         if ch == '\n' {
+                            self.token_type.line += 1;
+                            self.token_type.column = 1;
                             self.consume();
                             break;
                         }

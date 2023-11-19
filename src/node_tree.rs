@@ -1,6 +1,23 @@
-use crate::traits::{
-    Token
+use crate::traits::Token;
+use crate::traits::TokenType;
+use crate::errors::{
+    Result as Result__,
+    HasteErrors,
+    generals::{
+        GenError,
+        GenErrorTypes
+    },
+    expretions::{
+        ExpretionError,
+        ExpretionErrorTypes
+    },
+    variables::{
+        VarStatmentError,
+        VarErrorTypes
+    }
 };
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub enum NodeExpr {
@@ -26,11 +43,11 @@ pub struct NodeTree {
 
 #[derive(Debug)]
 pub struct TreeParser<'a> {
-    content: &'a Vec<Token>,
+    content: &'a Vec<TokenType>,
 }
 
 impl<'a> TreeParser<'a> {
-    pub fn new(content: &'a Vec<Token>) -> Self {
+    pub fn new(content: &'a Vec<TokenType>) -> Self {
         return TreeParser { 
             content: content
         };
@@ -41,12 +58,13 @@ impl<'a> TreeParser<'a> {
     }
     fn parse_statment<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
         -> NodeTree
-        where I: Iterator<Item = &'a Token>
+        where I: Iterator<Item = &'a TokenType>
     {
         let mut tree = NodeTree {
             body: vec![]
         };
-        while let Some(token) = tokens.peek() {
+        while let Some(t) = tokens.peek() {
+            let mut token = &t.token;
             match token {
                 Token::Exit => {
                     tokens.next();
@@ -87,45 +105,59 @@ impl<'a> TreeParser<'a> {
         return tree;
     }
     fn parse_expr<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
-        -> Result<NodeExpr, &'static str>
-        where I: Iterator<Item = &'a Token>
+        -> Result__<NodeExpr>
+        where I: Iterator<Item = &'a TokenType>
     {
         return match tokens.peek() {
-            Some(token) => {
-                match token {
-                Token::Ident(value) => Ok(NodeExpr::Ident(value.to_string())),
-                Token::IntLit(value) => Ok(NodeExpr::IntLit(value.to_string())),
-                Token::StringLit(value, r#type) => Ok(NodeExpr::StringLit(value.clone(), *r#type)),
-                Token::Boolean(value) => Ok(NodeExpr::Boolean(*value)),
-                Token::FloatLit(value) => Ok(NodeExpr::FloatLit(value.to_string())),
-                _ => Err("[Syntax Error] Current token is not a valid Expretion")
+            Some(token_type) => {
+                match &token_type.token {
+                    Token::Ident(value) => Ok(NodeExpr::Ident(value.to_string())),
+                    Token::IntLit(value) => Ok(NodeExpr::IntLit(value.to_string())),
+                    Token::StringLit(value, r#type) => Ok(NodeExpr::StringLit(value.clone(), *r#type)),
+                    Token::Boolean(value) => Ok(NodeExpr::Boolean(*value)),
+                    Token::FloatLit(value) => Ok(NodeExpr::FloatLit(value.to_string())),
+                    _ => Err(HasteErrors::Expr(
+                        ExpretionError::new(
+                            ExpretionErrorTypes::InvalidExpretion,
+                            token_type.line, token_type.column,
+                        )
+                    ))
                 }
             },
-            None => Err("[Syntax Error] the file ends before finding a valid Token"),
+            None => Err(HasteErrors::Str("[Syntax Error] the file ends before finding a valid Token")),
         }
     }
     fn parseVar<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
-        -> Result<NodeStatment, &'static str>
-        where I: Iterator<Item = &'a Token>
+        -> Result__<NodeStatment>
+        where I: Iterator<Item = &'a TokenType>
     {
         let mut statment: NodeStatment;
         let mut ident: NodeExpr;
         let mut aa: NodeExpr = NodeExpr::Null;
-        if let Some(token) = tokens.peek() {
+        if let Some(t) = tokens.peek() {
+            let mut token = &t.token;
             match token {
                 Token::Ident(_) => {
                     ident = self.parse_expr(tokens)?;
                     tokens.next();
                 },
-                _ => return Err(r#"[1Syntax Error] Wrong 'let' syntax.
-try `let ident;` or `let ident = "Something";`"#),
+                _ => return Err(HasteErrors::Vars(
+                    VarStatmentError::new(
+                        VarErrorTypes::NoIdent,
+                        t.line, t.column,
+                    )
+                )),
             }
         } else {
-            return Err(r#"[2Syntax Error] You ended the file b4 complete 'let' syntax.
-try `let ident;` or `let ident = "Something";`"#);
+            return Err(HasteErrors::Vars(
+                VarStatmentError::new(
+                    VarErrorTypes::EndOfTheFile,
+                    0, 0,
+                )
+            ));
         }
-        if let Some(token) = tokens.peek() {
-            match token {
+        if let Some(token_type) = tokens.peek() {
+            match token_type.token {
                 Token::Eq => {
                     tokens.next();
                     aa = self.parse_expr(tokens)?;
@@ -135,24 +167,33 @@ try `let ident;` or `let ident = "Something";`"#);
                     tokens.next();
                 },
                 _ => {
-                    return Err(r#"[3Syntax Error] 'let' syntax is invalid.
-try `let ident;` or `let ident = "Something";`, {:#?}"#);
+                    return Err(HasteErrors::Vars(
+                        VarStatmentError::new(
+                            VarErrorTypes::InvalidToken,
+                            token_type.line, token_type.column,
+                        )
+                    ));
                 }
             }
         } else {
-            return Err(r#"[4Syntax Error] You ended the file b4 complete 'let' syntax.
-try `let ident;` or `let ident = "Something";`"#);
+            return Err(HasteErrors::Vars(
+                VarStatmentError::new(
+                    VarErrorTypes::EndOfTheFile,
+                    0, 0,
+                )
+            ));
         }
 
         statment = NodeStatment::Var(ident, aa);
         return Ok(statment);
     }
     fn parsePrint<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
-        -> Result<NodeStatment, &'static str>
-        where I: Iterator<Item = &'a Token>
+        -> Result__<NodeStatment>
+        where I: Iterator<Item = &'a TokenType>
     {
-        return if let Some(token) = tokens.peek() {
-            let mut res: Result<NodeStatment, &'static str>;
+        return if let Some(t) = tokens.peek() {
+            let mut token = &t.token;
+            let mut res: Result__<NodeStatment>;
             match token {
                 Token::IntLit(_)
                     | Token::StringLit(_, _)
@@ -162,33 +203,34 @@ try `let ident;` or `let ident = "Something";`"#);
                     res = Ok(NodeStatment::Print(self.parse_expr(tokens)?));
                 },
                 _ => {
-                    res = Err(r#"[Syntax Error] "print" method only accept 'int', 'float', 'boolean' and 'string'"#);
+                    res = Err(HasteErrors::Str(r#"[Syntax Error] "print" method only accept 'int', 'float', 'boolean' and 'string'"#));
                 }
             }
             tokens.next();
             res
         } else {
-            Err(r#"[Syntax Error] you just end every think and forgot to pass an argument to "print" method!!"#)
+            Err(HasteErrors::Str(r#"[Syntax Error] you just end every think and forgot to pass an argument to "print" method!!"#))
         };
     }
     fn parseExit<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
-        -> Result<NodeStatment, &'static str>
-        where I: Iterator<Item = &'a Token>
+        -> Result__<NodeStatment>
+        where I: Iterator<Item = &'a TokenType>
     {
-        return if let Some(token) = tokens.peek() {
-            let mut res: Result<NodeStatment, &'static str>;
+        return if let Some(t) = tokens.peek() {
+            let mut token = &t.token;
+            let mut res: Result__<NodeStatment>;
             match token {
                 Token::IntLit(_) | Token::Ident(_) => {
                     res = Ok(NodeStatment::Exit(self.parse_expr(tokens)?));
                 },
                 _ => {
-                    res = Err(r#"[Syntax Error] It has to be a byte inside "Exit" method"#);
+                    res = Err(HasteErrors::Str(r#"[Syntax Error] It has to be a byte inside "Exit" method"#));
                 }
             }
             tokens.next();
             res
         } else {
-            Err(r#"[Syntax Error] you just end every think and forgot to pass an argument to "exit" method!!"#)
+            Err(HasteErrors::Str(r#"[Syntax Error] you just end every think and forgot to pass an argument to "exit" method!!"#))
         }
     }
 }
