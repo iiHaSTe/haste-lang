@@ -74,7 +74,7 @@ impl<'a> TreeParser<'a> {
                     tokens.next();
                     tree.body.push(self.parsePrint(tokens)?);
                 },
-                Token::Var => {
+                Token::Keyword(_) => {
                     tokens.next();
                     tree.body.push(self.parseVar(tokens)?);
                 },

@@ -10,7 +10,7 @@ pub enum Token {
     Exit,
     Print,
     // keywords
-    Var,
+    Keyword(String),
     Ident(String),
     // built in data types
     IntLit(String),

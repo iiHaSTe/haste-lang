@@ -97,7 +97,7 @@ impl<'a> Tokenizer<'a> {
                         "print" =>
                             tokens.push(self.init_token(Token::Print)),
                         "var" =>
-                            tokens.push(self.init_token(Token::Var)),
+                            tokens.push(self.init_token(Token::Keyword(buffer.to_string()))),
                         b if b == "true" || b == "false" =>
                             tokens.push(self.init_token(Token::Boolean(b == "true"))),
                         v =>
