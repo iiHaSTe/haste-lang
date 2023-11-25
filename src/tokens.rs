@@ -26,7 +26,6 @@ impl<'a> Process<char> for Tokenizer<'a> {
     fn consume(&mut self) -> char {
         let tmp = self.index.clone();
         self.index += 1;
-        self.token_type.column += 1;
         return self.content.chars().nth(tmp).unwrap();
     }
 }
@@ -69,7 +68,7 @@ impl<'a> Tokenizer<'a> {
         let mut buffer: String = String::from("");
         while let Some(ch) = self.peek(None) {
             self.token_type.token = Token::Vide;
-            //self.token_type.column += 1;
+            self.token_type.column += 1;
             match ch {
                 c if c.is_whitespace() => {
                     if c == '\n' {
@@ -78,6 +77,7 @@ impl<'a> Tokenizer<'a> {
                         self.consume();
                         continue;
                     }
+                    self.token_type.column += 1;
                     self.consume();
                     continue;
                 },
@@ -85,6 +85,7 @@ impl<'a> Tokenizer<'a> {
                     buffer.push(self.consume());
                     while let Some(cc) = self.peek(None) {
                         if cc.is_alphanumeric() || cc == '_' {
+        self.token_type.column += 1;
                             buffer.push(self.consume());
                         } else {
                             break;
@@ -109,8 +110,10 @@ impl<'a> Tokenizer<'a> {
                     let mut isFloat = false;
                     while let Some(cc) = self.peek(None) {
                         if cc.is_numeric() { 
+        self.token_type.column += 1;
                             buffer.push(self.consume());
                         } else if cc == '.' {
+        self.token_type.column += 1;
                             buffer.push(self.consume());
                             isFloat = true;
                         } else {
@@ -133,6 +136,7 @@ impl<'a> Tokenizer<'a> {
                 '"' | '\'' => {
                     self.consume();
                     while let Some(c) = self.peek(None) {
+        self.token_type.column += 1;
                         if c == '"' || c == '\'' {
                             self.consume();
                             break;
@@ -145,6 +149,7 @@ impl<'a> Tokenizer<'a> {
                 '`' => {
                     self.consume();
                     while let Some(c) = self.peek(None) {
+        self.token_type.column += 1;
                         if c != '`' {
                             self.str_tokener(&mut buffer, &c);
                         } else {

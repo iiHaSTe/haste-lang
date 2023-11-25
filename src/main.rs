@@ -5,6 +5,7 @@ pub mod traits;
 pub mod node_tree;
 pub mod generator;
 pub mod errors;
+pub mod cli;
 
 use std::fs;
 use std::fs::File;
@@ -13,8 +14,10 @@ use std::io::prelude::*;
 use crate::tokens::Tokenizer;
 use crate::node_tree::TreeParser;
 use crate::generator::javascript::JSGenerator;
+use crate::cli::run_cli;
 
 fn main() -> std::io::Result<()> {
+    // run_cli();
     let binding = fs::read("./main.haste")?;
     let input = String::from_utf8_lossy(&binding);
     
@@ -22,7 +25,13 @@ fn main() -> std::io::Result<()> {
     let tokens = tokenizer.tokenize();
 
     let mut parser = TreeParser::new(&tokens);
-    let tree = parser.parse();
+    let tree = match parser.parse() {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        },
+    };
 
     let generator = JSGenerator::new(&tree);
     let javascriptCode = generator.generate_programe();

@@ -52,12 +52,12 @@ impl<'a> TreeParser<'a> {
             content: content
         };
     }
-    pub fn parse(&mut self) -> NodeTree {
+    pub fn parse(&mut self) -> Result__<NodeTree> {
         let mut tokens = self.content.into_iter().peekable();
         return self.parse_statment(&mut tokens);
     }
     fn parse_statment<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
-        -> NodeTree
+        -> Result__<NodeTree>
         where I: Iterator<Item = &'a TokenType>
     {
         let mut tree = NodeTree {
@@ -68,33 +68,15 @@ impl<'a> TreeParser<'a> {
             match token {
                 Token::Exit => {
                     tokens.next();
-                    tree.body.push(match self.parseExit(tokens) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            eprintln!("{}", e);
-                            std::process::exit(1);
-                        }
-                    });
+                    tree.body.push(self.parseExit(tokens)?);
                 },
                 Token::Print => {
                     tokens.next();
-                    tree.body.push(match self.parsePrint(tokens) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            eprintln!("{}", e);
-                            std::process::exit(1);
-                        }
-                    });
+                    tree.body.push(self.parsePrint(tokens)?);
                 },
                 Token::Var => {
                     tokens.next();
-                    tree.body.push(match self.parseVar(tokens) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            eprintln!("{}", e);
-                            std::process::exit(1);
-                        }
-                    });
+                    tree.body.push(self.parseVar(tokens)?);
                 },
                 Token::Semi => {
                     tokens.next();
@@ -102,7 +84,7 @@ impl<'a> TreeParser<'a> {
                 _ => {},
             }
         }
-        return tree;
+        return Ok(tree);
     }
     fn parse_expr<I>(&mut self, tokens: &mut std::iter::Peekable<I>)
         -> Result__<NodeExpr>

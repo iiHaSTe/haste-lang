@@ -1,5 +1,7 @@
 # prototype file (not the release !!!)
 
+const f(x) = x + 1;
+
 func main() {
     print "Hello world!\n";
     println "Hello world!";
