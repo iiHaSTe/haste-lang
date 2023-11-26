@@ -1,16 +1,16 @@
-use crate::node_tree::{NodeTree, NodeStatment, NodeExpr};
-
-
-
-
+use crate::parser::node_types::{
+    NodeProgram,
+    NodeStatment,
+    NodeExpr
+};
 
 #[derive(Debug)]
 pub struct JSGenerator<'a> {
-    tree: &'a NodeTree
+    tree: &'a NodeProgram
 }
 
 impl<'a> JSGenerator<'a> {
-    pub fn new(tree: &'a NodeTree) -> Self {
+    pub fn new(tree: &'a NodeProgram) -> Self {
         return JSGenerator {tree}
     }
     pub fn generate_programe(&self) -> String {
@@ -28,6 +28,8 @@ impl<'a> JSGenerator<'a> {
                 format!("console.log({});\n", self.generate_expr(&value)),
             NodeStatment::Var(ident, value) =>
                 format!("let {} = {};\n", self.generate_expr(ident), self.generate_expr(value)),
+            NodeStatment::Assignment(ident, value) =>
+                format!("{} = {};\n", self.generate_expr(ident), self.generate_expr(value)),
             _ => {
                 eprintln!("[Syntax Error] no freinds?");
                 std::process::exit(1);

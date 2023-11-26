@@ -4,6 +4,8 @@ Is a semicolon based language (I don't want to suffering while im make this lang
 [Note:
 **_All language features and subject are temporary 
 and able to change_**]
+[Fun fact:
+**_I'll forgot that language for a while. My environment piss me off (im using mobile). i didn't know the project will get that complicate. so no Haste for a yeaaaaaars :('_**]
 
 ## Features:
 - How to try it? <br/>

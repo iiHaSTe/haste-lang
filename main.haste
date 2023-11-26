@@ -1,26 +1,10 @@
 # starts here
 
 var name = "Hesham";
-print name;
+var exit_succesful = 0;
+name = "yes";
+print name  ;
 
-var yy = "xx"
-
-var str = "string";
-var int_ = 69;
-var float_ = 69.69;
-var boolean = true;
-var boolean_2 = false;
-
-print 'yes';
-print `\"String\": ${str}`;
-print `\"Int\": ${int_}`;
-print `\"Float\": ${float_}`;
-print `\"Boolean\": ${boolean}`;
-print `\"Boolean 2\": ${boolean_2}`;
-
-print 1983;
-print true;
-print 0.2703;
 print "\tI love Turtles <3"; # yes
 
 exit exit_succesful;

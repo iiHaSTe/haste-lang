@@ -1,0 +1,9 @@
+<program> ::= <statement>
+<statement> ::= <var-dec> | <function-call> | <assignment>
+
+<var-dec> ::= "var" <ident> "=" <expretion> ";"
+<function-call> ::= <ident> "(" ")" ";"
+<assignment> ::= <ident> "=" <expretion> ";"
+
+<expretion> ::= <int-lit> | <string-lit> | <ident> | <function-call>
+
